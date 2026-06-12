@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SolarShield — Симуляция</title>
+<style>
+  :root{
+    --bg: #000000;
+    --panel: #0a0a0a;
+    --panel2: #121212;
+    --line: #1f1f1f;
+    --text: #e5e5e5;
+    --muted: #737373;
+    --accent: #2196f3;
+    --accent2: #ff9800;
+    --danger: #ef5350;
+    --safe: #4caf50;
+    --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  }
+  *{box-sizing: border-box; margin: 0; padding: 0;}
+  body{
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    padding: 24px 16px;
+  }
+  .wrap{ max-width: 440px; margin: 0 auto; }
+
+  header{ display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .logo-img{ width: 44px; height: 44px; object-fit: contain; flex-shrink: 0; background: transparent; }
+  h1{ font-size: 1.35rem; font-weight: 700; letter-spacing: -0.01em; color: #ffffff; }
+  .sub{ color: var(--muted); font-size: .82rem; margin-top: 2px; }
+
+  .tabs{ display: flex; gap: 8px; margin-bottom: 16px; }
+  .tab{
+    flex: 1; padding: 11px; border-radius: 6px; border: 1px solid var(--line);
+    background: var(--panel2); color: var(--muted);
+    font-weight: 600; font-size: .88rem; cursor: pointer; text-align: center;
+  }
+  .tab.active{ background: var(--accent); color: #ffffff; border-color: transparent; }
+
+  .panel{ background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 18px; margin-bottom: 14px; }
+
+  .slider-group{ margin-bottom: 16px; }
+  .slider-group:last-child{ margin-bottom: 0; }
+  .slider-label{ display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .slider-label .name{ font-weight: 500; font-size: .88rem; color: #cccccc; }
+  .slider-label .val{ color: var(--accent); font-size: .88rem; font-weight: 600; }
+  input[type=range]{ -webkit-appearance: none; width: 100%; height: 4px; border-radius: 2px; background: var(--panel2); outline: none; }
+  input[type=range]::-webkit-slider-thumb{ -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; }
+  input[type=range]::-moz-range-thumb{ width: 16px; height: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; border: none; }
+
+  .btn-main{
+    width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer;
+    background: var(--accent); color: #ffffff; font-weight: 600; font-size: .95rem;
+    transition: background 0.15s; margin-bottom: 14px;
+  }
+  .btn-main:hover{ background: #1976d2; }
+
+  .status-card{ border-radius: 8px; padding: 16px; margin-bottom: 14px; background: #0c2e16; text-align: center; border: 1px solid #144723; }
+  .status-card.warn{ background: #3d2000; border: 1px solid #5c3200; }
+  .status-card.crit{ background: #3b0d0d; border: 1px solid #5e1414; }
+  .status-title{ font-size: 1.15rem; font-weight: 700; margin-bottom: 2px; color: #ffffff; }
+  .status-prob{ font-size: .9rem; opacity: 0.9; color: #dddddd; }
+
+  .breakdown-title{ font-weight: 600; font-size: .85rem; margin-bottom: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.02em; }
+  .factor{ margin-bottom: 12px; }
+  .factor:last-child{ margin-bottom: 0; }
+  .factor-name{ font-size: .82rem; margin-bottom: 4px; color: var(--muted); }
+  .factor-bar{ height: 4px; background: var(--panel2); border-radius: 2px; overflow: hidden; }
+  .factor-bar > div{ height: 100%; width: 0%; transition: width 0.4s ease; }
+
+  .threat-title{ font-weight: 700; font-size: 1.05rem; margin-bottom: 14px; color: var(--safe); }
+  .threat-title.warn{ color: var(--accent2); }
+  .threat-title.crit{ color: var(--danger); }
+
+  .threat-card{ background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; margin-bottom: 10px; display: flex; gap: 12px; align-items: center; }
+  .threat-icon{ font-size: 1.3rem; flex-shrink: 0; }
+  .threat-text{ font-size: .86rem; line-height: 1.4; color: #cccccc; }
+
+  .hidden{ display: none; }
+  footer{ text-align: center; color: var(--muted); font-size: .75rem; margin-top: 24px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <img src="logo.jpg" class="logo-img" alt="SolarShield Logo">
+    <div>
+      <h1>SolarShield</h1>
+      <div class="sub">Ғарыштық ауа райын модельдеу панелі</div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="scan">Модельдеу панелі</div>
+    <div class="tab" data-tab="threats">Инфрақұрылым күйі</div>
+  </div>
+
+  <div id="scanTab">
+    <div class="panel">
+      <div class="slider-group">
+        <div class="slider-label"><span class="name">Solar Flux</span><span class="val" id="fluxVal">150</span></div>
+        <input type="range" id="flux" min="50" max="400" step="10" value="150">
+      </div>
+      <div class="slider-group">
+        <div class="slider-label"><span class="name">Solar Wind Speed</span><span class="val" id="windVal">400 км/с</span></div>
+        <input type="range" id="wind" min="300" max="1000" step="10" value="400">
+      </div>
+      <div class="slider-group">
+        <div class="slider-label"><span class="name">Bz</span><span class="val" id="bzVal">0 нТл</span></div>
+        <input type="range" id="bz" min="-50" max="20" step="1" value="0">
+      </div>
+      <div class="slider-group">
+        <div class="slider-label"><span class="name">Density</span><span class="val" id="densVal">5</span></div>
+        <input type="range" id="dens" min="0" max="100" step="1" value="5">
+      </div>
+    </div>
+
+    <button class="btn-main" id="analyzeBtn">Есептеу</button>
+
+    <div class="status-card" id="statusCard">
+      <div class="status-title" id="statusTitle">Жүйе дайын</div>
+      <div class="status-prob" id="statusProb">Параметрлерді таңдап, есептеуді басыңыз</div>
+    </div>
+
+    <div class="panel">
+      <div class="breakdown-title">Факторлардың әсері</div>
+      <div class="factor">
+        <div class="factor-name" id="txtFlux">Flux: --</div>
+        <div class="factor-bar"><div id="barFlux" style="background:#2196f3;"></div></div>
+      </div>
+      <div class="factor">
+        <div class="factor-name" id="txtWind">Wind Speed: --</div>
+        <div class="factor-bar"><div id="barWind" style="background:#4caf50;"></div></div>
+      </div>
+      <div class="factor">
+        <div class="factor-name" id="txtBz">Bz әсері: --</div>
+        <div class="factor-bar"><div id="barBz" style="background:#ff9800;"></div></div>
+      </div>
+      <div class="factor">
+        <div class="factor-name" id="txtDens">Density: --</div>
+        <div class="factor-bar"><div id="barDens" style="background:#ef5350;"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="threatsTab" class="hidden">
+    <div class="threat-title" id="threatTitle">Магнитосфера тұрақты</div>
+    <div class="threat-card"><div class="threat-icon">🛰️</div><div class="threat-text" id="satText">Байланыс серіктері қалыпты жұмыс істеуде.</div></div>
+    <div class="threat-card"><div class="threat-icon">🧭</div><div class="threat-text" id="gpsText">GPS сигналдары тұрақты.</div></div>
+    <div class="threat-card"><div class="threat-icon">⚡</div><div class="threat-text" id="gridText">Энергия желілері штаттық режимде.</div></div>
+  </div>
+
+  <footer>SolarShield — Ғарыштық ауа-райын бақылау симуляторы</footer>
+</div>
+
+<script>
+const flux = document.getElementById('flux');
+const wind = document.getElementById('wind');
+const bz = document.getElementById('bz');
+const dens = document.getElementById('dens');
+
+flux.oninput = () => document.getElementById('fluxVal').textContent = flux.value;
+wind.oninput = () => document.getElementById('windVal').textContent = wind.value + ' км/с';
+bz.oninput = () => document.getElementById('bzVal').textContent = bz.value + ' нТл';
+dens.oninput = () => document.getElementById('densVal').textContent = dens.value;
+
+document.querySelectorAll('.tab').forEach(t=>{
+  t.onclick = ()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    const target = t.dataset.tab;
+    document.getElementById('scanTab').classList.toggle('hidden', target!=='scan');
+    document.getElementById('threatsTab').classList.toggle('hidden', target!=='threats');
+  };
+});
+
+function stormProbability(f, w, b, d){
+  const windPressure = (w/400) * (d/10);
+  const bzEffect = b < 0 ? Math.abs(b)*1.8 : 0;
+  const fluxEffect = f * 0.02;
+  const score = windPressure + bzEffect + fluxEffect;
+  const k = 0.35;
+  const prob = 1/(1+Math.exp(-k*(score-25)));
+  return {prob: prob*100, windPressure, bzEffect, fluxEffect};
+}
+
+document.getElementById('analyzeBtn').onclick = ()=>{
+  const f = parseFloat(flux.value);
+  const w = parseFloat(wind.value);
+  const b = parseFloat(bz.value);
+  const d = parseFloat(dens.value);
+
+  const {prob, windPressure, bzEffect, fluxEffect} = stormProbability(f,w,b,d);
+  const statusCard = document.getElementById('statusCard');
+  const statusTitle = document.getElementById('statusTitle');
+  const statusProb = document.getElementById('statusProb');
+
+  statusCard.classList.remove('warn','crit');
+  if(prob >= 70){
+    statusTitle.textContent = 'КРИТИКАЛЫҚ ЖАҒДАЙ';
+    statusCard.classList.add('crit');
+  } else if(prob >= 35){
+    statusTitle.textContent = 'ТҰРАҚСЫЗДЫҚ СЕЗІЛЕДІ';
+    statusCard.classList.add('warn');
+  } else {
+    statusTitle.textContent = 'ТҰРАҚТЫ ФОН';
+  }
+  statusProb.textContent = `Дауыл ықтималдығы: ${prob.toFixed(1)}%`;
+
+  let total = windPressure + bzEffect + fluxEffect;
+  if(total === 0) total = 1;
+
+  const pFlux = fluxEffect/total;
+  const pBz = bzEffect/total;
+  const pWind = (windPressure/2)/total;
+  const pDens = (windPressure/2)/total;
+
+  document.getElementById('txtFlux').textContent = `Flux: ${(pFlux*100).toFixed(1)}%`;
+  document.getElementById('txtWind').textContent = `Wind Speed: ${(pWind*100).toFixed(1)}%`;
+  document.getElementById('txtBz').textContent = `Bz әсері: ${(pBz*100).toFixed(1)}%`;
+  document.getElementById('txtDens').textContent = `Density: ${(pDens*100).toFixed(1)}%`;
+
+  document.getElementById('barFlux').style.width = (pFlux*100)+'%';
+  document.getElementById('barWind').style.width = (pWind*100)+'%';
+  document.getElementById('barBz').style.width = (pBz*100)+'%';
+  document.getElementById('barDens').style.width = (pDens*100)+'%';
+
+  const tEl = document.getElementById('threatTitle');
+  tEl.classList.remove('warn','crit');
+
+  if(prob >= 70){
+    tEl.textContent = '⚠️ КРИТИКАЛЫҚ ҚАУІП'; tEl.classList.add('crit');
+    document.getElementById('satText').textContent = 'Спутниктермен байланыс үзілу қаупі жоғары.';
+    document.getElementById('gpsText').textContent = 'GPS жүйесінде толық блокталған аймақтар болуы мүмкін.';
+    document.getElementById('gridText').textContent = 'Электр желілеріне трансформаторлық зақым келу қаупі бар.';
+  } else if(prob >= 35){
+    tEl.textContent = 'Жоғары белсенділік'; tEl.classList.add('warn');
+    document.getElementById('satText').textContent = 'Корпустарда статикалық зарядтар жиналуы мүмкін.';
+    document.getElementById('gpsText').textContent = 'Навигацияда қысқа мерзімді кедергілер болуы ықтимал.';
+    document.getElementById('gridText').textContent = 'Өнеркәсіптік желілерде кернеудің аздап ауытқуы мүмкін.';
+  } else {
+    tEl.textContent = 'Магнитосфера тұрақты';
+    document.getElementById('satText').textContent = 'Байланыс серіктері қалыпты жұмыс істеуде.';
+    document.getElementById('gpsText').textContent = 'GPS сигналдары тұрақты, ауытқулар жоқ.';
+    document.getElementById('gridText').textContent = 'Энергия желілері штаттық режимде.';
+  }
+};
+</script>
+</body>
+</html>
